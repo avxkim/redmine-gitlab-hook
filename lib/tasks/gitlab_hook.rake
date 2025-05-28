@@ -1,4 +1,4 @@
-namespace :gitlab_hook do
+  namespace :redmine_gitlab_hook do
   desc 'Create GitLab system user for commit reference notes'
   task create_user: :environment do
     # Check if the GitLab user already exists

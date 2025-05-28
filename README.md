@@ -19,12 +19,12 @@ This plugin integrates Redmine with GitLab by processing webhook events from Git
 1. Clone this repository into your Redmine plugins directory:
    ```
    cd /path/to/redmine/plugins
-   git clone https://github.com/your-username/redmine_gitlab_hooker.git
+   git clone https://github.com/your-username/redmine-gitlab-hook.git
    ```
 
 2. Create the GitLab system user for posting commit references:
    ```
-   bundle exec rake gitlab_hook:create_user RAILS_ENV=production
+   bundle exec rake redmine_gitlab_hook:create_user RAILS_ENV=production
    ```
 
 3. Restart your Redmine instance:
