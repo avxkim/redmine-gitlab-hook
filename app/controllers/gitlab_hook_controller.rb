@@ -39,7 +39,7 @@ class GitlabHookController < ApplicationController
     issue = Issue.find_by(id: issue_id)
     return unless issue
 
-    note_text = "Referenced by commit [#{commit['id'][0..7]}](#{commit['url']}) " \
+    note_text = "Referenced by commit [#{commit['id'][0..7]}](#{commit['url']}){:target="_blank"} " \
                "in #{repository['name']}:\n\n" \
                "_#{commit['message'].strip}_\n\n" \
                "Authored by #{commit['author']['name']} on #{format_date(commit['timestamp'])}"
@@ -59,6 +59,12 @@ class GitlabHookController < ApplicationController
 
   def get_system_user
     user = User.find_by(login: 'gitlab')
-    user || User.admin.first
+
+    unless user
+      Rails.logger.warn "GitLab Hook: 'gitlab' user not found, please run the gitlab_hook:create_user rake task"
+      user = User.new(login: 'gitlab', firstname: 'GitLab', lastname: 'Integration')
+    end
+
+    user
   end
 end

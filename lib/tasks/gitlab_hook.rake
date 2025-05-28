@@ -1,4 +1,4 @@
-  namespace :"redmine-gitlab-hook" do
+namespace :"redmine-gitlab-hook" do
   desc 'Create GitLab system user for commit reference notes'
   task create_user: :environment do
     if User.find_by(login: 'gitlab').present?
@@ -12,7 +12,7 @@
       login: 'gitlab',
       firstname: 'GitLab',
       lastname: 'Integration',
-      mail: 'gitlab@gitlab.com',
+      mail: 'gitlab@example.com',
       password: password,
       password_confirmation: password,
       admin: false,

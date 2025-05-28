@@ -24,7 +24,12 @@ This plugin integrates Redmine with GitLab by processing webhook events from Git
 
 2. Create the GitLab system user for posting commit references:
    ```
-   bundle exec rake "redmine-gitlab-hook:create_user" RAILS_ENV=production
+   # For development environment
+   bundle exec rake "redmine-gitlab-hook:create_user" RAILS_ENV=development
+
+   # For production environment
+   # If you encounter a 'Missing secret_key_base' error, try:
+   RAILS_ENV=production SECRET_KEY_BASE=temporary_key bundle exec rake "redmine-gitlab-hook:create_user"
    ```
 
 3. Restart your Redmine instance:
