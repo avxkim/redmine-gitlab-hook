@@ -1,0 +1,4 @@
+en:
+  gitlab_hook:
+    label_gitlab_hook: GitLab Hook
+    system_user_name: GitLab Integration
