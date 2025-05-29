@@ -25,7 +25,7 @@ class GitlabHookController < ApplicationController
     action = mr['action']
     Rails.logger.info "Processing merge request: !#{mr['iid']} - #{mr['title']} - Action: #{action}"
 
-    return if ['approved', 'approval', 'unapproved'].include?(action)
+    return if ['approved', 'approval', 'unapproved', 'merge'].include?(action)
 
     title_issue_ids = extract_issue_ids(mr['title'])
     desc_issue_ids = extract_issue_ids(mr['description'].to_s)
@@ -84,7 +84,7 @@ class GitlabHookController < ApplicationController
                     .where("notes LIKE ?", "%[#{commit_short_id}]%")
                     .exists?
 
-                   note_text = "Referenced by commit [#{commit_short_id}](#{commit['url']}{:target=\"_blank\"}) " \
+                   note_text = "Referenced by commit [#{commit_short_id}](#{commit['url']}?target=_blank) " \
                "in #{repository['name']}:\n\n" \
                "_#{commit['message'].strip}_\n\n" \
                "Authored by #{commit['author']['name']} on #{format_date(commit['timestamp'])}"
@@ -125,7 +125,7 @@ class GitlabHookController < ApplicationController
                        "#{action.capitalize} by #{author['name']} on #{format_date(mr['updated_at'])}"
                      end
 
-                   note_text = "Referenced by Merge request [#{mr_id}](#{mr['url']}{:target=\"_blank\"}) " \
+                   note_text = "Referenced by Merge request [#{mr_id}](#{mr['url']}?target=_blank) " \
                "in #{project['name']}:\n\n" \
                "_#{mr['title'].strip}_\n\n" \
                "#{action_message}"
