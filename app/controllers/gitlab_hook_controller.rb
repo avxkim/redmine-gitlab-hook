@@ -4,10 +4,13 @@ class GitlabHookController < ApplicationController
   def index
     request_payload = JSON.parse(request.body.read)
 
-    if request_payload['object_kind'] == 'push'
+    case request_payload['object_kind']
+    when 'push'
       process_commits(request_payload['commits'], request_payload['repository'])
-    elsif request_payload['object_kind'] == 'merge_request'
+    when 'merge_request'
       process_merge_request(request_payload)
+    else
+      Rails.logger.info "Ignoring unsupported GitLab webhook event: #{request_payload['object_kind']}"
     end
 
     render json: { success: true }, status: :ok
@@ -25,7 +28,7 @@ class GitlabHookController < ApplicationController
     action = mr['action']
     Rails.logger.info "Processing merge request: !#{mr['iid']} - #{mr['title']} - Action: #{action}"
 
-    return if ['approved', 'approval', 'unapproved', 'merge'].include?(action)
+    return if ['approved', 'approval', 'unapproved'].include?(action)
 
     title_issue_ids = extract_issue_ids(mr['title'])
     desc_issue_ids = extract_issue_ids(mr['description'].to_s)
@@ -55,11 +58,16 @@ class GitlabHookController < ApplicationController
     Rails.logger.info "Processing #{commits.size} commits from repository: #{repository['name']}"
 
     commits.each do |commit|
+      if commit['message'].strip.start_with?('Merge branch', 'Merge pull request')
+        Rails.logger.info "Skipping merge commit: #{commit['id'][0..7]}"
+        next
+      end
+
       Rails.logger.info "Processing commit: #{commit['id'][0..7]} - #{commit['message'].strip.split('\n').first}"
       issue_ids = extract_issue_ids(commit['message'])
 
       if issue_ids.empty?
-        Rails.logger.info "No issue references found in commit #{commit['id'][0..7]}"
+        Rails.logger.info "No issue references found in commit #{commit['id'][0..7]}, skipping"
         next
       end
 
