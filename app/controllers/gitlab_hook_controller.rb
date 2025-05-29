@@ -84,7 +84,7 @@ class GitlabHookController < ApplicationController
                     .where("notes LIKE ?", "%[#{commit_short_id}]%")
                     .exists?
 
-                   note_text = "Referenced by commit [#{commit_short_id}](#{commit['url']}?target=_blank) " \
+                   note_text = "Referenced by commit [#{commit_short_id}](#{commit['url']}) " \
                "in #{repository['name']}:\n\n" \
                "_#{commit['message'].strip}_\n\n" \
                "Authored by #{commit['author']['name']} on #{format_date(commit['timestamp'])}"
@@ -125,7 +125,7 @@ class GitlabHookController < ApplicationController
                        "#{action.capitalize} by #{author['name']} on #{format_date(mr['updated_at'])}"
                      end
 
-                   note_text = "Referenced by Merge request [#{mr_id}](#{mr['url']}?target=_blank) " \
+                   note_text = "Referenced by Merge request [#{mr_id}](#{mr['url']}) " \
                "in #{project['name']}:\n\n" \
                "_#{mr['title'].strip}_\n\n" \
                "#{action_message}"
