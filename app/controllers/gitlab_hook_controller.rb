@@ -6,8 +6,8 @@ class GitlabHookController < ApplicationController
 
     if request_payload['object_kind'] == 'push'
       process_commits(request_payload['commits'], request_payload['repository'])
-    elsif request_payload['object_kind'] == 'merge_request' && request_payload['object_attributes']['action'] == 'merge'
-      Rails.logger.info "Skipping merge request event processing: MR ##{request_payload['object_attributes']['iid']}"
+    elsif request_payload['object_kind'] == 'merge_request'
+      process_merge_request(request_payload)
     end
 
     render json: { success: true }, status: :ok
@@ -17,6 +17,37 @@ class GitlabHookController < ApplicationController
   end
 
   private
+
+  def process_merge_request(payload)
+    mr = payload['object_attributes']
+    return unless mr.present?
+
+    action = mr['action']
+    Rails.logger.info "Processing merge request: !#{mr['iid']} - #{mr['title']} - Action: #{action}"
+
+    return if ['approved', 'approval', 'unapproved'].include?(action)
+
+    title_issue_ids = extract_issue_ids(mr['title'])
+    desc_issue_ids = extract_issue_ids(mr['description'].to_s)
+
+    last_commit_issue_ids = []
+    if payload['object_attributes']['last_commit'].present?
+      last_commit_issue_ids = extract_issue_ids(payload['object_attributes']['last_commit']['message'].to_s)
+    end
+
+    issue_ids = (title_issue_ids + desc_issue_ids + last_commit_issue_ids).uniq
+
+    if issue_ids.empty?
+      Rails.logger.info "No issue references found in merge request !#{mr['iid']}"
+      return
+    end
+
+    Rails.logger.info "Found issue references in merge request !#{mr['iid']}: #{issue_ids.join(', ')}"
+
+    issue_ids.each do |issue_id|
+      add_merge_request_reference_to_issue(issue_id, payload)
+    end
+  end
 
   def process_commits(commits, repository)
     return unless commits.present?
@@ -57,6 +88,47 @@ class GitlabHookController < ApplicationController
                "in #{repository['name']}:\n\n" \
                "_#{commit['message'].strip}_\n\n" \
                "Authored by #{commit['author']['name']} on #{format_date(commit['timestamp'])}"
+
+    journal = Journal.new(
+      journalized: issue,
+      user: get_system_user,
+      notes: note_text
+    )
+
+    journal.save
+      end
+
+      def add_merge_request_reference_to_issue(issue_id, payload)
+    issue = Issue.find_by(id: issue_id)
+    return unless issue
+
+    mr = payload['object_attributes']
+    project = payload['project']
+    author = payload['user']
+    action = mr['action']
+
+    mr_id = "!#{mr['iid']}"
+    return if Journal.where(journalized: issue)
+                    .where("notes LIKE ?", "%Merge request #{mr_id}% #{action}%")
+                    .exists?
+
+    action_message = case action
+                     when 'open'
+                       "Opened by #{author['name']} on #{format_date(mr['created_at'])}"
+                     when 'merge'
+                       "Merged by #{author['name']} on #{format_date(mr['updated_at'])}"
+                     when 'close'
+                       "Closed by #{author['name']} on #{format_date(mr['updated_at'])}"
+                     when 'update'
+                       "Updated by #{author['name']} on #{format_date(mr['updated_at'])}"
+                     else
+                       "#{action.capitalize} by #{author['name']} on #{format_date(mr['updated_at'])}"
+                     end
+
+    note_text = "Referenced by Merge request [#{mr_id}](#{mr['url']}){:target=\"_blank\"} " \
+               "in #{project['name']}:\n\n" \
+               "_#{mr['title'].strip}_\n\n" \
+               "#{action_message}"
 
     journal = Journal.new(
       journalized: issue,

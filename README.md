@@ -4,10 +4,11 @@ This plugin integrates Redmine with GitLab by processing webhook events from Git
 
 ## Features
 
-- Processes GitLab webhook push events
-- Parses commit messages for issue references (e.g., "fixes #123")
-- Adds commit information as notes to referenced issues
-- Supports multiple issue references per commit
+- Processes GitLab webhook push events and merge request events
+- Parses commit messages and merge request titles/descriptions for issue references (e.g., "fixes #123")
+- Adds commit and merge request information as notes to referenced issues
+- Supports multiple issue references per commit or merge request
+- Prevents duplicate references from being added
 
 ## Requirements
 
@@ -53,7 +54,7 @@ https://your-redmine-instance.com/gitlab-hook
 2. Navigate to Settings > Webhooks
 3. Add a new webhook with the following settings:
    - URL: `https://your-redmine-instance.com/gitlab-hook`
-   - Trigger: Select "Push events"
+   - Trigger: Select both "Push events" and "Merge request events"
    - SSL verification: Enable if your Redmine uses HTTPS with a valid certificate
 4. Click "Add webhook"
 
@@ -72,7 +73,11 @@ The plugin recognizes the following reference formats in commit messages:
 
 ## Troubleshooting
 
-If the plugin is not working as expected, check the Redmine logs at `log/production.log` for any error messages related to "GitLab Hook".
+If the plugin is not working as expected:
+
+1. Check the Redmine logs at `log/production.log` for any error messages related to "GitLab Hook"
+2. **Always restart Redmine after updating the plugin** by touching the restart file: `touch tmp/restart.txt`
+3. Make sure the webhook in GitLab is configured for both Push events and Merge request events
 
 ## License
 
