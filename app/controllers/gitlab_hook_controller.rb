@@ -6,6 +6,8 @@ class GitlabHookController < ApplicationController
 
     if request_payload['object_kind'] == 'push'
       process_commits(request_payload['commits'], request_payload['repository'])
+    elsif request_payload['object_kind'] == 'merge_request' && request_payload['object_attributes']['action'] == 'merge'
+      Rails.logger.info "Skipping merge request event processing: MR ##{request_payload['object_attributes']['iid']}"
     end
 
     render json: { success: true }, status: :ok
@@ -19,11 +21,18 @@ class GitlabHookController < ApplicationController
   def process_commits(commits, repository)
     return unless commits.present?
 
+    Rails.logger.info "Processing #{commits.size} commits from repository: #{repository['name']}"
+
     commits.each do |commit|
+      Rails.logger.info "Processing commit: #{commit['id'][0..7]} - #{commit['message'].strip.split('\n').first}"
       issue_ids = extract_issue_ids(commit['message'])
 
-      next if issue_ids.empty?
+      if issue_ids.empty?
+        Rails.logger.info "No issue references found in commit #{commit['id'][0..7]}"
+        next
+      end
 
+      Rails.logger.info "Found issue references in commit #{commit['id'][0..7]}: #{issue_ids.join(', ')}"
       issue_ids.each do |issue_id|
         add_commit_reference_to_issue(issue_id, commit, repository)
       end
@@ -39,7 +48,12 @@ class GitlabHookController < ApplicationController
     issue = Issue.find_by(id: issue_id)
     return unless issue
 
-    note_text = "Referenced by commit [#{commit['id'][0..7]}](#{commit['url']}){:target="_blank"} " \
+    commit_short_id = commit['id'][0..7]
+    return if Journal.where(journalized: issue)
+                    .where("notes LIKE ?", "%[#{commit_short_id}]%")
+                    .exists?
+
+    note_text = "Referenced by commit [#{commit_short_id}](#{commit['url']}){:target="_blank"} " \
                "in #{repository['name']}:\n\n" \
                "_#{commit['message'].strip}_\n\n" \
                "Authored by #{commit['author']['name']} on #{format_date(commit['timestamp'])}"
