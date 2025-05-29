@@ -140,7 +140,7 @@ class GitlabHookController < ApplicationController
   end
 
   def format_date(timestamp)
-    Time.parse(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+    Time.parse(timestamp).localtime.strftime("%Y-%m-%d %H:%M:%S")
   end
 
   def get_system_user
