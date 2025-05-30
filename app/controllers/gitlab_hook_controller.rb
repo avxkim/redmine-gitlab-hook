@@ -58,9 +58,7 @@ class GitlabHookController < ApplicationController
     Rails.logger.info "Processing #{commits.size} commits from repository: #{repository['name']}"
 
     commits.each do |commit|
-      issue_ids = extract_issue_ids(commit['message'])
-
-      if commit['message'].strip.start_with?('Merge branch', 'Merge pull request') && issue_ids.empty?
+      if commit['message'].strip.start_with?('Merge branch', 'Merge pull request')
         Rails.logger.info "Skipping merge commit: #{commit['id'][0..7]}"
         next
       end

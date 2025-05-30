@@ -9,6 +9,7 @@ This plugin integrates Redmine with GitLab by processing webhook events from Git
 - Adds commit and merge request information as notes to referenced issues
 - Supports multiple issue references per commit or merge request
 - Prevents duplicate references from being added
+- Filters out merge commits to avoid redundant issue notes
 
 ## Requirements
 
