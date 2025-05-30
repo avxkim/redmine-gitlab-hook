@@ -28,7 +28,7 @@ class GitlabHookController < ApplicationController
     action = mr['action']
     Rails.logger.info "Processing merge request: !#{mr['iid']} - #{mr['title']} - Action: #{action}"
 
-    return if ['approved', 'approval', 'unapproved'].include?(action)
+    return if ['approved', 'approval', 'unapproved', 'merge'].include?(action)
 
     title_issue_ids = extract_issue_ids(mr['title'])
     desc_issue_ids = extract_issue_ids(mr['description'].to_s)
@@ -58,7 +58,9 @@ class GitlabHookController < ApplicationController
     Rails.logger.info "Processing #{commits.size} commits from repository: #{repository['name']}"
 
     commits.each do |commit|
-      if commit['message'].strip.start_with?('Merge branch', 'Merge pull request')
+      issue_ids = extract_issue_ids(commit['message'])
+
+      if commit['message'].strip.start_with?('Merge branch', 'Merge pull request') && issue_ids.empty?
         Rails.logger.info "Skipping merge commit: #{commit['id'][0..7]}"
         next
       end
@@ -148,7 +150,7 @@ class GitlabHookController < ApplicationController
   end
 
   def format_date(timestamp)
-    Time.parse(timestamp).in_time_zone('GMT+5').strftime("%Y-%m-%d %H:%M:%S")
+    Time.parse(timestamp).in_time_zone('Asia/Almaty').strftime("%Y-%m-%d %H:%M:%S")
   end
 
   def get_system_user
